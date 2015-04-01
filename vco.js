@@ -177,7 +177,7 @@ var VCO = function() {
 
   this.updateTargetCent = function() {
     var noteNumber = this.noteNumber + this.courseTune - 64;
-    this.targetCent = (noteNumber * 100) - 6900;
+    this.targetCent = (noteNumber * 100) - 6900 + ((this.fineTune - 64) * (100 / 64));
   };
 
   this.updateWaveTable = function() {
