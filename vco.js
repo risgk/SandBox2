@@ -90,16 +90,6 @@ var VCO = function() {
   }
   generateWaveTableFFT(this.waveTablesPseudoTri,  1, this.originalPseudoTri);
 
-  this.freqTableC4toB4 = [];
-  var generatefreqTable = function() {
-    for (var i = 0; i <= 11; i++) {
-      n = i + 60;
-      cent = (n * 100) - 6900;
-      hz = 440 * Math.pow(2, cent / 1200);
-      that.freqTableC4toB4[i] = hz * CYCLE_RESOLUTION / SAMPLING_RATE;
-    }
-  }();
-
   this.resetPhase = function() {
     this.phase = 0;
   };
@@ -132,7 +122,7 @@ var VCO = function() {
 
   this.setCoarseTune = function(coarseTune) {
     this.courseTune = coarseTune;
-    this.updateFreq();
+    this.updateTargetFreq();
   };
 
   this.coarseTune = function() {
@@ -141,52 +131,72 @@ var VCO = function() {
 
   this.setFineTune = function(fineTune) {
     this.fineTune = fineTune;
-    this.updateFreq();
+    this.updateTargetFreq();
   };
 
   this.noteOn = function(noteNumber) {
     this.noteNumber = noteNumber;
-    this.updateFreq();
+    this.updateTargetFreq();
   };
 
   this.clock = function() {
-    this.phase += this.freq;
+    changeSpeed = 1200 / SAMPLING_RATE / (this.portamentoTime / 256); // TODO: Improve
+    if (this.freq > this.targetFreq + changeSpeed) {
+      this.freq -= changeSpeed;
+    } else if (this.freq < this.targetFreq - changeSpeed) {
+      this.freq += changeSpeed;
+    } else {
+      this.freq = this.targetFreq;
+    }
+
+    this.phase += Math.floor(440 * Math.pow(2, this.freq / 1200) * CYCLE_RESOLUTION / SAMPLING_RATE);
     if (this.phase >= CYCLE_RESOLUTION) {
       this.phase -= CYCLE_RESOLUTION;
+      this.updateWaveTable();
     }
     var currIndex = Math.floor(this.phase / (CYCLE_RESOLUTION / SAMPLES_PER_CYCLE));
     var nextIndex = currIndex + 1;
     if (nextIndex >= SAMPLES_PER_CYCLE) {
       nextIndex -= SAMPLES_PER_CYCLE;
     }
-    var waveTable = this.waveTables[Math.floor((this.overtone + 1) / 2) - 1];
-    var currData = waveTable[currIndex];
-    var nextData = waveTable[nextIndex];
+    var currData = this.waveTable[currIndex];
+    var nextData = this.waveTable[nextIndex];
 
     var level;
     var nextWeight = this.phase % (CYCLE_RESOLUTION / SAMPLES_PER_CYCLE);
     var currWeight = (CYCLE_RESOLUTION / SAMPLES_PER_CYCLE) - nextWeight;
-    level = ((currData * currWeight) + (nextData * nextWeight)) / (CYCLE_RESOLUTION / SAMPLES_PER_CYCLE);
+    level = ((currData * currWeight) + (nextData * nextWeight)) /
+            (CYCLE_RESOLUTION / SAMPLES_PER_CYCLE);
 
     return level;
   };
 
-  this.updateFreq = function() {
+  this.updateTargetFreq = function() {
     var noteNumber = this.noteNumber + this.courseTune - 64;
-    var base = Math.floor(this.freqTableC4toB4[noteNumber % 12] *
-                          Math.pow(2, (this.fineTune - 64) / 768) / 32) * 32;
-    this.freq = base * Math.pow(2, Math.floor(noteNumber / 12) - 5);
-    this.overtone = Math.floor((MAX_FREQ * CYCLE_RESOLUTION) / (this.freq * SAMPLING_RATE));
-    if (this.overtone > MAX_OVERTONE) {
-      this.overtone = MAX_OVERTONE;
+    this.targetFreq = (noteNumber * 100) - 6900;
+    if (this.portamentoTime == 0) {
+      this.freq = this.targetFreq;
+      this.updateWaveTable();
     }
   };
 
-  this.courseTune  = 64;
-  this.fineTune    = 64;
-  this.noteNumber  = 60;
-  this.phase       = 0;
-  this.freq        = 0;
-  this.overtone    = 1;
-  this.waveTables  = this.waveTablesSawtooth;
+  this.updateWaveTable = function() {
+    this.overtone = Math.floor((MAX_FREQ * CYCLE_RESOLUTION) /
+                               (440 * Math.pow(2, this.freq / 1200) * SAMPLING_RATE));
+    if (this.overtone > MAX_OVERTONE) {
+      this.overtone = MAX_OVERTONE;
+    }
+    this.waveTable = this.waveTables[Math.floor((this.overtone + 1) / 2) - 1];
+  };
+
+  this.courseTune     = 64;
+  this.fineTune       = 64;
+  this.noteNumber     = 60;
+  this.phase          = 0;
+  this.freq           = 0; // [cent]
+  this.targetFreq     = 0; // [cent]
+  this.portamentoTime = 64;
+  this.overtone       = 1;
+  this.waveTables     = this.waveTablesSawtooth;
+  this.waveTable      = this.waveTables[0];
 };
