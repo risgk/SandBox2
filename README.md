@@ -1,19 +1,17 @@
-# Digital Synth WRA32 5.1.0
+# Digital Synth WRB32 0.0.0
 
-2015-02-15 ISGK Instruments  
-[https://github.com/risgk/digital-synth-wra32](https://github.com/risgk/digital-synth-wra32)
+2015-04-01 ISGK Instruments  
+<https://github.com/risgk/digital-synth-wrb32>
 
 ## Concept
 
-- Virtual Analog Synthesizer Web App
-- A sibling of [Digital Synth VRA8](https://github.com/risgk/DigitalSynthVRA8)
+- Digital Synthesizer Web App
 
 ## Features
 
 - Using Web MIDI API and Web Audio API
 - We recommend Google Chrome (Please enable Web MIDI API)
 - Supporting MIDI IN
-- Supporting 32 bit float audio (48 kHz/32 bit in Google Chrome 38 for Windows)
 
 ## Synth Modules
 
@@ -55,8 +53,8 @@
 
 ## MIDI Implementation Chart
 
-      [Virtual Analog Synthesizer]                                    Date: 2015-02-15       
-      Model  Digital Synth WRA32      MIDI Implementation Chart       Version: 5.1.0         
+      [Digital Synthesizer]                                           Date: 2015-04-01       
+      Model  Digital Synth WRB32      MIDI Implementation Chart       Version: 0.0.0         
     +-------------------------------+---------------+---------------+-----------------------+
     | Function...                   | Transmitted   | Recognized    | Remarks               |
     +-------------------------------+---------------+---------------+-----------------------+
