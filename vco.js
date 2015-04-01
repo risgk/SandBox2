@@ -122,7 +122,7 @@ var VCO = function() {
 
   this.setCoarseTune = function(coarseTune) {
     this.courseTune = coarseTune;
-    this.updateTargetFreq();
+    this.updateTargetCent();
   };
 
   this.coarseTune = function() {
@@ -131,28 +131,32 @@ var VCO = function() {
 
   this.setFineTune = function(fineTune) {
     this.fineTune = fineTune;
-    this.updateTargetFreq();
+    this.updateTargetCent();
   };
 
   this.noteOn = function(noteNumber) {
     this.noteNumber = noteNumber;
-    this.updateTargetFreq();
+    this.updateTargetCent();
   };
 
   this.clock = function() {
-    changeSpeed = 1200 / SAMPLING_RATE / (this.portamentoTime / 256); // TODO: Improve
-    if (this.freq > this.targetFreq + changeSpeed) {
-      this.freq -= changeSpeed;
-    } else if (this.freq < this.targetFreq - changeSpeed) {
-      this.freq += changeSpeed;
+    if (this.portamentoTime == 0) {
+      this.cent = this.targetCent;
     } else {
-      this.freq = this.targetFreq;
+      changeSpeed = 1200 / SAMPLING_RATE / (this.portamentoTime / 256); // TODO: Improve
+      if (this.cent > this.targetCent + changeSpeed) {
+        this.cent -= changeSpeed;
+      } else if (this.cent < this.targetCent - changeSpeed) {
+        this.cent += changeSpeed;
+      } else {
+        this.cent = this.targetCent;
+      }
     }
+    this.updateWaveTable();
 
-    this.phase += Math.floor(440 * Math.pow(2, this.freq / 1200) * CYCLE_RESOLUTION / SAMPLING_RATE);
+    this.phase += Math.floor(440 * Math.pow(2, this.cent / 1200) * CYCLE_RESOLUTION / SAMPLING_RATE);
     if (this.phase >= CYCLE_RESOLUTION) {
       this.phase -= CYCLE_RESOLUTION;
-      this.updateWaveTable();
     }
     var currIndex = Math.floor(this.phase / (CYCLE_RESOLUTION / SAMPLES_PER_CYCLE));
     var nextIndex = currIndex + 1;
@@ -171,18 +175,13 @@ var VCO = function() {
     return level;
   };
 
-  this.updateTargetFreq = function() {
+  this.updateTargetCent = function() {
     var noteNumber = this.noteNumber + this.courseTune - 64;
-    this.targetFreq = (noteNumber * 100) - 6900;
-    if (this.portamentoTime == 0) {
-      this.freq = this.targetFreq;
-      this.updateWaveTable();
-    }
+    this.targetCent = (noteNumber * 100) - 6900;
   };
 
   this.updateWaveTable = function() {
-    this.overtone = Math.floor((MAX_FREQ * CYCLE_RESOLUTION) /
-                               (440 * Math.pow(2, this.freq / 1200) * SAMPLING_RATE));
+    this.overtone = Math.floor(MAX_FREQ / (440 * Math.pow(2, this.cent / 1200)));
     if (this.overtone > MAX_OVERTONE) {
       this.overtone = MAX_OVERTONE;
     }
@@ -193,8 +192,8 @@ var VCO = function() {
   this.fineTune       = 64;
   this.noteNumber     = 60;
   this.phase          = 0;
-  this.freq           = 0; // [cent]
-  this.targetFreq     = 0; // [cent]
+  this.cent           = 0; // [cent]
+  this.targetCent     = 0; // [cent]
   this.portamentoTime = 64;
   this.overtone       = 1;
   this.waveTables     = this.waveTablesSawtooth;
